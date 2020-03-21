@@ -1,0 +1,86 @@
+﻿@page "/"
+@using StudioServer.Data
+@inject StudioControl StudioControl
+@inject IJSRuntime JSRuntime
+
+<h1>Выбор режима записи</h1>
+
+<p>@IsActiveOrNot</p>
+<p>@IsOnOff</p>
+<p>Режим: @currentRegime</p>
+<p>Сессия: @StudioControl.StreamerController.CurrentSession</p>
+<p>Результат последнего запроса: @lastResult</p>
+
+<button class="btn btn-primary" @onclick="OnOff">@DoOnOff</button>
+<button class="btn btn-primary" @onclick="Presenter">Только презентер</button>
+<button class="btn btn-primary" @onclick="Presentation">Только презентация</button>
+<button class="btn btn-primary" @onclick="SideBySide">Оба</button>
+<button class="btn btn-primary" @onclick="Streamer">Как стример</button>
+<br />
+<textarea @bind="lecturerUrl" />
+<textarea @bind="presentationUrl" />
+<br />
+<p>Архив</p>
+@foreach (var file in files)
+{
+    <li>@file</li>
+    <button class="btn btn-primary" @onclick="(() => DownloadFile(file))">Скачать</button>
+}
+@code {
+
+    string[] files;
+    protected override async Task OnInitializedAsync()
+    {
+        files = await StudioControl.GetFiles();
+        StudioControl.StreamerController.StateHasChanged += ControllerStateHasChanged;
+    }
+
+    void ControllerStateHasChanged()
+    {
+        InvokeAsync(()=>
+        StateHasChanged());
+    }
+    string lecturerUrl;
+    string presentationUrl;
+
+    public async void DownloadFile(string fileName)
+    {
+        await JSRuntime.InvokeAsync<object>(
+            "methods.DownloadFile",
+            new object[] { fileName }
+        );
+    }
+
+    private string currentRegime => StudioControl.StreamerController.CurrentState.ToString();
+    private bool currentlyRecording => StudioControl.StreamerController.IsRecording;
+    private bool currentlyActive => StudioControl.StreamerController.IsActive;
+    private string lastResult = "";
+    private string DoOnOff => currentlyRecording ? "Выключить запись" : "Включить запись";
+    private string IsOnOff => currentlyRecording ? "Идёт запись" : "Не идёт запись";
+    private string IsActiveOrNot => currentlyActive ? "Студия запущена" : "Студия не запущена";
+    private async void OnOff()
+    {
+        if (currentlyRecording)
+            await StudioControl.StopStudio();
+        else
+            await StudioControl.StartStudio(lecturerUrl, presentationUrl);
+
+    }
+    private async void Presenter()
+    {
+        lastResult = await StudioControl.ChangeStudioScene("Presenter");
+
+    }
+    private async void Presentation()
+    {
+        lastResult = await StudioControl.ChangeStudioScene("Presentation");
+    }
+    private async void SideBySide()
+    {
+        lastResult = await StudioControl.ChangeStudioScene("SideBySide");
+    }
+    private async void Streamer()
+    {
+        lastResult = await StudioControl.ChangeStudioScene("Streamer");
+    }
+}
