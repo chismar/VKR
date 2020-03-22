@@ -32,6 +32,16 @@ namespace SimpleRtspPlayer.GUI.Models
         MediaOutput _outputFile;
         void RunSound()
         {
+            try
+            {
+                if (_audioToken != null && !_audioToken.IsCancellationRequested)
+                    _audioToken.Cancel();
+            }
+            finally
+            {
+
+            }
+            _audioToken = new CancellationTokenSource();
             var t = _audioToken.Token;
             task = Task.Run(async () =>
             {
@@ -53,6 +63,7 @@ namespace SimpleRtspPlayer.GUI.Models
                     }*/
                     await Task.Delay(100);
                 }
+                wo.Stop();
                 wo.Dispose();
             });
         }
@@ -100,7 +111,7 @@ namespace SimpleRtspPlayer.GUI.Models
             }
             else
                 _audioStream.AddSamples(frame.DecodedBytes.Array, frame.DecodedBytes.Offset, frame.DecodedBytes.Count);
-            Console.WriteLine($"{(_lastTime - DateTime.Now).TotalMilliseconds}, {_audioStream.BufferedDuration.TotalMilliseconds}");
+            //Console.WriteLine($"{(_lastTime - DateTime.Now).TotalMilliseconds}, {_audioStream.BufferedDuration.TotalMilliseconds}");
             _lastTime = DateTime.Now;
         }
 

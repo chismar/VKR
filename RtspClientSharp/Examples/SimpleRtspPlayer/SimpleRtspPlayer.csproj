@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\RtspClientSharp\RtspClientSharp.csproj" />
     <ProjectReference Include="..\FFMediaToolkit\FFMediaToolkit.csproj" />
+    <ProjectReference Include="..\StudioServer\StudioServer.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="x64\avcodec-58.dll" />
@@ -32,6 +33,8 @@
     <Content Include="x86\swscale-5.dll" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Jot" Version="2.1.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.2" />
     <PackageReference Include="MvvmLightLibsStd10" Version="5.4.1.1" />
     <PackageReference Include="NAudio" Version="1.10.0" />
   </ItemGroup>

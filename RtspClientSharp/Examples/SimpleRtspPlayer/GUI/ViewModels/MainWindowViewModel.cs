@@ -1,15 +1,18 @@
 ﻿using System;
 using System.ComponentModel;
+using System.IO;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows;
 using GalaSoft.MvvmLight.Command;
 using RtspClientSharp;
 using SimpleRtspPlayer.GUI.Models;
+using StudioServer;
 
 namespace SimpleRtspPlayer.GUI.ViewModels
 {
-    public class MainWindowViewModel : INotifyPropertyChanged
+    public class MainWindowViewModel : INotifyPropertyChanged, IStreamerController
     {
         private const string RtspPrefix = "rtsp://";
         private const string HttpPrefix = "http://";
@@ -17,7 +20,14 @@ namespace SimpleRtspPlayer.GUI.ViewModels
         private string _status = string.Empty;
         private readonly IMainWindowModel _mainWindowModel;
         private bool _startButtonEnabled = true;
-        private bool _stopButtonEnabled;
+        private bool _stopButtonEnabled; 
+        
+        public SetupState SetupState { get; private set; } = new SetupState()
+        {
+            FolderForVideos = "/home/studio/videos/",
+            LecturerFeed = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov",//"\"rtsp://admin:Supervisor@192.168.1.70:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif\"",
+            PresentationFeed = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov"//"\"rtsp://admin:Supervisor@192.168.1.70:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif\""//"\"rtsp://192.168.1.71/0\""
+        };
 
         public string DeviceAddress { get; set; } = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov";
 
@@ -45,8 +55,18 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             }
         }
 
+        public string CurrentSession { get; private set; }
+
+        public bool IsActive { get; private set; }
+
+        public bool IsRecording { get; private set; }
+
+        public SessionState CurrentState { get; private set; }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
+        public event Action StateHasChanged;
+        Task serverTask;
         public MainWindowViewModel(IMainWindowModel mainWindowModel)
         {
             _mainWindowModel = mainWindowModel ?? throw new ArgumentNullException(nameof(mainWindowModel));
@@ -54,6 +74,10 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             StartClickCommand = new RelayCommand(OnStartButtonClick, () => _startButtonEnabled);
             StopClickCommand = new RelayCommand(OnStopButtonClick, () => _stopButtonEnabled);
             ClosingCommand = new RelayCommand<CancelEventArgs>(OnClosing);
+            serverTask = Task.Run(() =>
+            {
+                StudioServer.Program.RunServer(this);
+            });
         }
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -114,6 +138,88 @@ namespace SimpleRtspPlayer.GUI.ViewModels
         private void OnClosing(CancelEventArgs args)
         {
             _mainWindowModel.Stop();
+        }
+
+        public async Task PrepareSetup(SetupState state)
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                SetupState = state;
+                StateHasChanged?.Invoke();
+            });
+        }
+
+        public async Task Run(string overrideLecturerUrl, string overridePresentationUrl)
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                this.SetupState = new SetupState()
+                {
+                    FolderForVideos = SetupState.FolderForVideos,
+                    RootFS = SetupState.RootFS,
+                    PresentationFeed = overridePresentationUrl ?? SetupState.PresentationFeed,
+                    LecturerFeed = overrideLecturerUrl ?? SetupState.LecturerFeed
+                };
+                IsActive = true;
+                if (!IsRecording)
+                    Task.Run(StopRecording);
+                StateHasChanged?.Invoke();
+            });
+        }
+
+        public async Task Stop()
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                IsActive = false;
+                if (IsRecording)
+                    Task.Run(StopRecording);
+                StateHasChanged?.Invoke();
+            });
+        }
+
+        public async Task BeginRecording()
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                OnStartButtonClick();
+                StateHasChanged?.Invoke();
+            });
+        }
+
+        public async Task StopRecording()
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                OnStopButtonClick();
+                StateHasChanged?.Invoke();
+            });
+        }
+
+        public async Task<string[]> GetFilesForSession(string name)
+        {
+            var ppath = SetupState.RootFS + SetupState.FolderForVideos;
+            if (!Directory.Exists(ppath))
+                return Array.Empty<string>();
+            return Directory.GetFiles(ppath, $"*{name}.avi");
+        }
+
+        public async Task SetRecordingSession(string name)
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                CurrentSession = name;
+                StateHasChanged?.Invoke();
+            });
+        }
+
+        public async Task ChangeSessionState(SessionState newState)
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                CurrentState = newState;
+                StateHasChanged?.Invoke();
+            });
         }
     }
 }
