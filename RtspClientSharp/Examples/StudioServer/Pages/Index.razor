@@ -17,8 +17,12 @@
 <button class="btn btn-primary" @onclick="SideBySide">Оба</button>
 <button class="btn btn-primary" @onclick="Streamer">Как стример</button>
 <br />
-<textarea @bind="lecturerUrl" />
-<textarea @bind="presentationUrl" />
+<textarea @bind="StudioControl.SetupState.LecturerFeed" />
+<textarea @bind="StudioControl.SetupState.LecturerFeedLogin" />
+<textarea @bind="StudioControl.SetupState.LecturerFeedPass" />
+<textarea @bind="StudioControl.SetupState.PresentationFeed" />
+<textarea @bind="StudioControl.SetupState.PresentationFeedLogin" />
+<textarea @bind="StudioControl.SetupState.PresentationFeedPass" />
 <br />
 <p>Архив</p>
 @foreach (var file in files)
@@ -37,11 +41,9 @@
 
     void ControllerStateHasChanged()
     {
-        InvokeAsync(()=>
+        InvokeAsync(() =>
         StateHasChanged());
     }
-    string lecturerUrl;
-    string presentationUrl;
 
     public async void DownloadFile(string fileName)
     {
@@ -63,7 +65,7 @@
         if (currentlyRecording)
             await StudioControl.StopStudio();
         else
-            await StudioControl.StartStudio(lecturerUrl, presentationUrl);
+            await StudioControl.StartStudio(StudioControl.SetupState);
 
     }
     private async void Presenter()

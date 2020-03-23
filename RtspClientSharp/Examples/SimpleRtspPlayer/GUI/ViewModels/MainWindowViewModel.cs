@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -20,11 +21,11 @@ namespace SimpleRtspPlayer.GUI.ViewModels
         private string _status = string.Empty;
         private readonly IMainWindowModel _mainWindowModel;
         private bool _startButtonEnabled = true;
-        private bool _stopButtonEnabled; 
-        
+        private bool _stopButtonEnabled;
+        bool useSetupState = false;
         public SetupState SetupState { get; private set; } = new SetupState()
         {
-            FolderForVideos = "/home/studio/videos/",
+            FolderForVideos = "/videos/",
             LecturerFeed = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov",//"\"rtsp://admin:Supervisor@192.168.1.70:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif\"",
             PresentationFeed = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov"//"\"rtsp://admin:Supervisor@192.168.1.70:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif\""//"\"rtsp://192.168.1.71/0\""
         };
@@ -106,8 +107,10 @@ namespace SimpleRtspPlayer.GUI.ViewModels
         }
         private void OnStartButtonClick()
         {
-            var cp1 = GetConparam(DeviceAddress, Login, Password);
-            var cp2= GetConparam(DeviceAddress2, Login2, Password2);
+
+            RunFFMpeg();
+            var cp1 = useSetupState ? GetConparam(SetupState.PresentationFeed, SetupState.PresentationFeedLogin, SetupState.PresentationFeedPass) : GetConparam(DeviceAddress, Login, Password);
+            var cp2= useSetupState ? GetConparam(SetupState.LecturerFeed, SetupState.LecturerFeedLogin, SetupState.LecturerFeedPass) : GetConparam(DeviceAddress2, Login2, Password2);
 
             _mainWindowModel.Start(cp1, cp2);
             _mainWindowModel.StatusChanged += MainWindowModelOnStatusChanged;
@@ -120,6 +123,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
 
         private void OnStopButtonClick()
         {
+            ffmpegRecordingProcess?.Kill();
             _mainWindowModel.Stop();
             _mainWindowModel.StatusChanged -= MainWindowModelOnStatusChanged;
 
@@ -149,20 +153,14 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             });
         }
 
-        public async Task Run(string overrideLecturerUrl, string overridePresentationUrl)
+        public async Task Run(SetupState state)
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                this.SetupState = new SetupState()
-                {
-                    FolderForVideos = SetupState.FolderForVideos,
-                    RootFS = SetupState.RootFS,
-                    PresentationFeed = overridePresentationUrl ?? SetupState.PresentationFeed,
-                    LecturerFeed = overrideLecturerUrl ?? SetupState.LecturerFeed
-                };
+                this.SetupState = state;
                 IsActive = true;
                 if (!IsRecording)
-                    Task.Run(StopRecording);
+                    Task.Run(BeginRecording);
                 StateHasChanged?.Invoke();
             });
         }
@@ -177,12 +175,46 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                 StateHasChanged?.Invoke();
             });
         }
+        Process ffmpegRecordingProcess;
+        void RunFFMpeg()
+        {
+            int exitCode;
+            ProcessStartInfo processInfo;
+            Process process;
+            string input = File.ReadAllText("ffmpeg_record.bat");
+            processInfo = new ProcessStartInfo("ffmpeg.exe", @"-f dshow -i video=""screen-capture-recorder"":audio=""virtual-audio-capturer"" -c:v libx264 -crf 0 -preset ultrafast output.mkv ");
+            processInfo.CreateNoWindow = true;
+            processInfo.WorkingDirectory = Directory.GetCurrentDirectory();
+            processInfo.UseShellExecute = false;
+            // *** Redirect the output ***
+            processInfo.RedirectStandardError = true;
+            processInfo.RedirectStandardOutput = true;
 
+            Task.Run(() =>
+            {
+                ffmpegRecordingProcess = Process.Start(processInfo);
+                ffmpegRecordingProcess.WaitForExit();
+
+                // *** Read the streams ***
+                // Warning: This approach can lead to deadlocks, see Edit #2
+                string output = ffmpegRecordingProcess.StandardOutput.ReadToEnd();
+                string error = ffmpegRecordingProcess.StandardError.ReadToEnd();
+
+                exitCode = ffmpegRecordingProcess.ExitCode;
+
+                Console.WriteLine("output>>" + (String.IsNullOrEmpty(output) ? "(none)" : output));
+                Console.WriteLine("error>>" + (String.IsNullOrEmpty(error) ? "(none)" : error));
+                Console.WriteLine("ExitCode: " + exitCode.ToString(), "ExecuteCommand");
+                ffmpegRecordingProcess.Close();
+            });
+        }
         public async Task BeginRecording()
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                useSetupState = true;
                 OnStartButtonClick();
+                useSetupState = false;
                 StateHasChanged?.Invoke();
             });
         }

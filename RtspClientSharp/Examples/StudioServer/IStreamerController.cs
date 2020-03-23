@@ -17,7 +17,7 @@ namespace StudioServer
     }
     public class SetupState
     {
-        public string RootFS = Directory.GetCurrentDirectory();//@"C:\Users\Виталий\AppData\Local\Packages\CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc\LocalState\rootfs\".Replace(@"\", @"/");
+        public string RootFS => Directory.GetCurrentDirectory();//@"C:\Users\Виталий\AppData\Local\Packages\CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc\LocalState\rootfs\".Replace(@"\", @"/");
         public string FolderForVideos;
         public string LecturerFeedPass;
         public string LecturerFeedLogin;
@@ -36,7 +36,7 @@ namespace StudioServer
         SessionState CurrentState { get; }
 
         Task PrepareSetup(SetupState state);
-        Task Run(string overrideLecturerUrl, string overridePresentationUrl);
+        Task Run(SetupState state);
         Task Stop();
         Task BeginRecording();
         Task StopRecording();
@@ -192,15 +192,9 @@ namespace StudioServer
 
         }
 
-        public async Task Run(string overrideLecturerUrl, string overridePresentationUrl)
+        public async Task Run(SetupState setupState)
         {
-            SetupState = new SetupState()
-            {
-                FolderForVideos = SetupState.FolderForVideos,
-                RootFS = SetupState.RootFS,
-                PresentationFeed = overridePresentationUrl ?? SetupState.PresentationFeed,
-                LecturerFeed = overrideLecturerUrl ?? SetupState.LecturerFeed
-            };
+            SetupState = setupState;
             await InitBash();
         }
 

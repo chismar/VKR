@@ -75,8 +75,6 @@ namespace SimpleRtspPlayer.GUI.Models
             //_outputFile = new MediaBuilder(@"C:\videos\example.mp4").WithVideo(settings).Create();
             //_outputFile.Video.AddFrame(new FFMediaToolkit.Graphics.ImageData());
             //_outputFile.Dispose();
-            var _rawFramesSource = this._rawFramesSource;
-            var _realtimeVideoSource = this._realtimeVideoSource;
             Start(connectionParameters, ref _rawFramesSource, _realtimeVideoSource, false);
             Start(connectionParameters2, ref _rawFramesSource2, _realtimeVideoSource2, true);
         }
@@ -117,13 +115,20 @@ namespace SimpleRtspPlayer.GUI.Models
 
         public void Stop()
         {
-            if (_rawFramesSource == null)
-                return;
 
             _audioToken.Cancel();
-            _rawFramesSource.Stop();
-            _realtimeVideoSource.SetRawFramesSource(null);
-            _rawFramesSource = null;
+            if (_rawFramesSource != null)
+            {
+                _rawFramesSource.Stop();
+                _realtimeVideoSource.SetRawFramesSource(null);
+                _rawFramesSource = null;
+            }
+            if (_rawFramesSource2 != null)
+            {
+                _rawFramesSource2.Stop();
+                _realtimeVideoSource2.SetRawFramesSource(null);
+                _rawFramesSource2 = null;
+            }
         }
 
         private void ConnectionStatusChanged(object sender, string s)

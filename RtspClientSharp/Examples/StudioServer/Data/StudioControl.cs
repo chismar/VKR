@@ -11,6 +11,7 @@ namespace StudioServer.Data
     {
         Task readTask;
         CancellationTokenSource _cts;
+        public SetupState SetupState => StreamerController.SetupState;
         public StudioControl()
         {
             _cts = new CancellationTokenSource();
@@ -41,7 +42,7 @@ namespace StudioServer.Data
                                     break;
                                 case ConsoleKey.NumPad5:
                                     await StreamerController.Stop();
-                                    await StreamerController.Run(null, null);
+                                    await StreamerController.Run(StreamerController.SetupState);
                                     await StreamerController.BeginRecording();
                                     break;
                                 case ConsoleKey.NumPad6:
@@ -66,11 +67,9 @@ namespace StudioServer.Data
                 _cts.Cancel();
         }
         public IStreamerController StreamerController;
-        public async Task<string> StartStudio(string lecturerUrl, string presentationUrl)
+        public async Task<string> StartStudio(SetupState state)
         {
-            lecturerUrl = String.IsNullOrWhiteSpace(lecturerUrl) ? null : lecturerUrl;
-            presentationUrl = String.IsNullOrWhiteSpace(presentationUrl) ? null : presentationUrl;
-            await StreamerController.Run(lecturerUrl, presentationUrl);
+            await StreamerController.Run(state);
             await StreamerController.SetRecordingSession("TestSession");
             //await StreamerController.BeginRecording();
             return "Done";
