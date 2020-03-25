@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -18,6 +19,14 @@ namespace SimpleRtspPlayer.GUI.Views
     /// <summary>
     /// Interaction logic for VideoView.xaml
     /// </summary>
+    /// 
+    //нет сил разбираться с WPF
+    public static class HideAndShowVideosAndFuckOff
+    {
+        public static bool ShowViewViewWithChromakey = true;
+        public static bool ShowViewViewBackground = true;
+        public static Action Update;
+    }
     public partial class VideoView
     {
         private static readonly System.Windows.Media.Color DefaultFillColor = Colors.Transparent;
@@ -36,7 +45,14 @@ namespace SimpleRtspPlayer.GUI.Views
 
         public static readonly DependencyProperty UseChromakeyProperty =
        DependencyProperty.RegisterAttached("UseChromakey", typeof(bool), typeof(VideoView), new PropertyMetadata(default(bool)));
+        public static readonly DependencyProperty VisibilityControlProperty =
+    DependencyProperty.RegisterAttached("VisibilityControl", typeof(bool), typeof(VideoView), new PropertyMetadata(default(bool)));
 
+        public bool VisibilityControl
+        {
+            get => (bool)GetValue(VisibilityControlProperty); //VideoImage.Visibility == Visibility.Visible;
+            set => SetValue(VisibilityControlProperty, value); // VideoImage.Visibility = (value ? Visibility.Visible : Visibility.Hidden);
+        }
         public bool UseChromakey
         {
             get => (bool)GetValue(UseChromakeyProperty);
@@ -64,11 +80,23 @@ namespace SimpleRtspPlayer.GUI.Views
             get => (System.Windows.Media.Color)GetValue(FillColorProperty);
             set => SetValue(FillColorProperty, value);
         }
-
         public VideoView()
         {
             InitializeComponent();
             _invalidateAction = Invalidate;
+            HideAndShowVideosAndFuckOff.Update += HideAndShowVideosAndFuckOff_Update;
+        }
+
+        private void HideAndShowVideosAndFuckOff_Update()
+        {
+            if(UseChromakey)
+            {
+                VideoImage.Visibility = HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey?Visibility.Visible:Visibility.Hidden;
+            }
+            else
+            {
+                VideoImage.Visibility = HideAndShowVideosAndFuckOff.ShowViewViewBackground ? Visibility.Visible : Visibility.Hidden;
+            }
         }
 
         protected override System.Windows.Size MeasureOverride(System.Windows.Size constraint)
@@ -137,15 +165,15 @@ namespace SimpleRtspPlayer.GUI.Views
             }
 
             VideoImage.Source = _writeableBitmap;
-            if(UseChromakey)
-            VideoImage.Effect = new Chromakey() { R = 81f / 255f, G = 96f / 255f, B = 41f / 255f, _Tolerance = 0f, _Threshold = 0.5f};
+            if (UseChromakey)
+                VideoImage.Effect = new Chromakey() { R = 81f / 255f, G = 96f / 255f, B = 41f / 255f, _Tolerance = 0f, _Threshold = 0.5f };
         }
         public class Chromakey : ShaderEffect
         {
             static Chromakey()
             {
                 // Associate _pixelShader with our compiled pixel shader
-                _pixelShader.UriSource = new Uri("Chromakey.ps",UriKind.Relative);
+                _pixelShader.UriSource = new Uri("Chromakey.ps", UriKind.Relative);
             }
 
             private static PixelShader _pixelShader = new PixelShader();
@@ -246,7 +274,7 @@ namespace SimpleRtspPlayer.GUI.Views
                 _writeableBitmap.Unlock();
             }
         }
-     
+
         private static void OnFillColorPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var view = (VideoView)d;

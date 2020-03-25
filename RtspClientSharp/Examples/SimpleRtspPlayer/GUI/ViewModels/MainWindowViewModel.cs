@@ -9,6 +9,7 @@ using System.Windows;
 using GalaSoft.MvvmLight.Command;
 using RtspClientSharp;
 using SimpleRtspPlayer.GUI.Models;
+using SimpleRtspPlayer.GUI.Views;
 using StudioServer;
 
 namespace SimpleRtspPlayer.GUI.ViewModels
@@ -41,6 +42,8 @@ namespace SimpleRtspPlayer.GUI.ViewModels
 
         public IVideoSource VideoSource => _mainWindowModel.VideoSource;
         public IVideoSource VideoSource2 => _mainWindowModel.VideoSource2;
+        public bool ShowVideoSource1 = true;
+        public bool ShowVideoSource2 = true;
 
         public RelayCommand StartClickCommand { get; }
         public RelayCommand StopClickCommand { get; }
@@ -175,14 +178,28 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                 StateHasChanged?.Invoke();
             });
         }
-        Process ffmpegRecordingProcess;
+        Process ffmpegRecordingProcess; 
+        public string MakeUnique(string path)
+        {
+            string dir = Path.GetDirectoryName(path);
+            string fileName = Path.GetFileNameWithoutExtension(path);
+            string fileExt = Path.GetExtension(path);
+
+            for (int i = 1; ; ++i)
+            {
+                if (!File.Exists(path))
+                    return path;
+
+                path = Path.Combine(dir, fileName + i + fileExt);
+            }
+        }
         void RunFFMpeg()
         {
             int exitCode;
             ProcessStartInfo processInfo;
             Process process;
             string input = File.ReadAllText("ffmpeg_record.bat");
-            processInfo = new ProcessStartInfo("ffmpeg.exe", @"-f dshow -i video=""screen-capture-recorder"":audio=""virtual-audio-capturer"" -c:v libx264 -crf 0 -preset ultrafast output.mkv ");
+            processInfo = new ProcessStartInfo("ffmpeg.exe", @$"-f dshow -i video=""screen-capture-recorder"":audio=""virtual-audio-capturer"" -c:v libx264 -crf 0 -preset ultrafast {MakeUnique("output.mkv")} ");
             processInfo.CreateNoWindow = true;
             processInfo.WorkingDirectory = Directory.GetCurrentDirectory();
             processInfo.UseShellExecute = false;
@@ -250,6 +267,26 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 CurrentState = newState;
+                switch (CurrentState)
+                {
+                    case SessionState.StreamerLike:
+                        HideAndShowVideosAndFuckOff.ShowViewViewBackground = true;
+                        HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = true;
+                        break;
+                    case SessionState.SideBySide:
+                        HideAndShowVideosAndFuckOff.ShowViewViewBackground = true;
+                        HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = true;
+                        break;
+                    case SessionState.OnlyPresentation:
+                        HideAndShowVideosAndFuckOff.ShowViewViewBackground = true;
+                        HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = false;
+                        break;
+                    case SessionState.OnlyLecturer:
+                        HideAndShowVideosAndFuckOff.ShowViewViewBackground = false;
+                        HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = true;
+                        break;
+                }
+                HideAndShowVideosAndFuckOff.Update?.Invoke();
                 StateHasChanged?.Invoke();
             });
         }

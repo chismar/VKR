@@ -2,7 +2,6 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using FFMediaToolkit.Encoding;
 using NAudio.Wave;
 using RtspClientSharp;
 using SimpleRtspPlayer.RawFramesDecoding.DecodedFrames;
@@ -29,7 +28,6 @@ namespace SimpleRtspPlayer.GUI.Models
         Task task;
         bool _playBackIsStopped;
         DateTime _lastTime;
-        MediaOutput _outputFile;
         void RunSound()
         {
             try

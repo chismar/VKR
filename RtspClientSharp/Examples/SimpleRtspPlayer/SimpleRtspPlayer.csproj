@@ -11,7 +11,6 @@
 	</PropertyGroup> 
   <ItemGroup>
     <ProjectReference Include="..\..\RtspClientSharp\RtspClientSharp.csproj" />
-    <ProjectReference Include="..\FFMediaToolkit\FFMediaToolkit.csproj" />
     <ProjectReference Include="..\StudioServer\StudioServer.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -54,17 +53,17 @@
 	  <Resource Include="Chromakey.ps" />
 	</ItemGroup>
 	<Target Name="CopyDlls" AfterTargets="Build">
-		<Message Importance="high" Text="@(MySourceFiles)"/>
-		<Message Importance="high" Text="@(FfmpegHelper)"/>
-		<Message Importance="high" Text="$(TargetDir)"/>
+		<Message Importance="high" Text="@(MySourceFiles)" />
+		<Message Importance="high" Text="@(FfmpegHelper)" />
+		<Message Importance="high" Text="$(TargetDir)" />
 		<Copy SourceFiles="@(MySourceFiles)" DestinationFolder="$(TargetDir)" />
 		<Copy SourceFiles="@(FfmpegHelper)" DestinationFolder="$(TargetDir)" />
 	</Target>
 
 	<Target Name="CopyDllsOnPublish" AfterTargets="Publish">
-		<Message Importance="high" Text="@(MySourceFiles)"/>
-		<Message Importance="high" Text="@(FfmpegHelper)"/>
-		<Message Importance="high" Text="$(PublishDir)"/>
+		<Message Importance="high" Text="@(MySourceFiles)" />
+		<Message Importance="high" Text="@(FfmpegHelper)" />
+		<Message Importance="high" Text="$(PublishDir)" />
 		<Copy SourceFiles="@(MySourceFiles)" DestinationFolder="$(PublishDir)" />
 		<Copy SourceFiles="@(FfmpegHelper)" DestinationFolder="$(PublishDir)" />
 	</Target>
