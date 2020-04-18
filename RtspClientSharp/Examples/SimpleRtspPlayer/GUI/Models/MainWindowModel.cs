@@ -44,6 +44,7 @@ namespace SimpleRtspPlayer.GUI.Models
             task = Task.Run(async () =>
             {
                 var wo = new WaveOutEvent();
+                wo.DeviceNumber = 1;
                 wo.Init(_audioStream);
                 wo.Play();
                 while (!t.IsCancellationRequested)

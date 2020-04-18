@@ -26,6 +26,8 @@ namespace SimpleRtspPlayer.GUI.Views
         public static bool ShowViewViewWithChromakey = true;
         public static bool ShowViewViewBackground = true;
         public static Action Update;
+
+        public static bool AsStreamer { get; internal set; }
     }
     public partial class VideoView
     {
@@ -92,6 +94,17 @@ namespace SimpleRtspPlayer.GUI.Views
             if(UseChromakey)
             {
                 VideoImage.Visibility = HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey?Visibility.Visible:Visibility.Hidden;
+                if(HideAndShowVideosAndFuckOff.AsStreamer)
+                {
+                    VideoImage.Width = this.ActualWidth / 10;
+                    VideoImage.Height = this.ActualHeight / 10;
+                }
+                else
+                {
+
+                    VideoImage.Width = ActualWidth;
+                    VideoImage.Height = ActualHeight;
+                }
             }
             else
             {

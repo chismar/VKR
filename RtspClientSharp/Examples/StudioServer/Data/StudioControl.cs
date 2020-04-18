@@ -42,7 +42,7 @@ namespace StudioServer.Data
                                     break;
                                 case ConsoleKey.NumPad5:
                                     await StreamerController.Stop();
-                                    await StreamerController.Run(StreamerController.SetupState);
+                                    await StreamerController.Run();
                                     await StreamerController.BeginRecording();
                                     break;
                                 case ConsoleKey.NumPad6:
@@ -69,7 +69,7 @@ namespace StudioServer.Data
         public IStreamerController StreamerController;
         public async Task<string> StartStudio(SetupState state)
         {
-            await StreamerController.Run(state);
+            await StreamerController.Run();
             await StreamerController.SetRecordingSession("TestSession");
             //await StreamerController.BeginRecording();
             return "Done";

@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using GalaSoft.MvvmLight.Command;
+using Jot;
 using RtspClientSharp;
 using SimpleRtspPlayer.GUI.Models;
 using SimpleRtspPlayer.GUI.Views;
@@ -14,6 +15,28 @@ using StudioServer;
 
 namespace SimpleRtspPlayer.GUI.ViewModels
 {
+    static class SetupStateTracker
+    {
+        // expose the tracker instance
+        public static Tracker Tracker = new Tracker();
+
+        static SetupStateTracker()
+        {
+            // tell Jot how to track Window objects
+            Tracker.Configure<SetupState>()
+                .Id(w => nameof(SetupState))
+                .Properties(w => new
+                {
+                    w.LecturerFeed,
+                    w.LecturerFeedLogin,
+                    w.LecturerFeedPass,
+                    w.PresentationFeed,
+                    w.PresentationFeedLogin,
+                    w.PresentationFeedPass
+                });
+    
+    }
+    }
     public class MainWindowViewModel : INotifyPropertyChanged, IStreamerController
     {
         private const string RtspPrefix = "rtsp://";
@@ -27,18 +50,21 @@ namespace SimpleRtspPlayer.GUI.ViewModels
         public SetupState SetupState { get; private set; } = new SetupState()
         {
             FolderForVideos = "/videos/",
-            LecturerFeed = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov",//"\"rtsp://admin:Supervisor@192.168.1.70:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif\"",
-            PresentationFeed = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov"//"\"rtsp://admin:Supervisor@192.168.1.70:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif\""//"\"rtsp://192.168.1.71/0\""
+            LecturerFeed = "rtsp://192.168.1.68:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif",//"rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov",//"\"rtsp://admin:Supervisor@192.168.1.70:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif\"",
+            PresentationFeed = "rtsp://192.168.1.70/0",//"rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov"//"\"rtsp://admin:Supervisor@192.168.1.70:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif\""//"\"rtsp://192.168.1.71/0\""
+            LecturerFeedPass = "Supervisor",
+            LecturerFeedLogin = "admin",
+            PresentationFeedLogin = "admin",
+            PresentationFeedPass = "Supervisor"
         };
 
-        public string DeviceAddress { get; set; } = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov";
+        public string DeviceAddress { get => SetupState.PresentationFeed; set => SetupState.PresentationFeed = value; }
+        public string Login { get => SetupState.PresentationFeedLogin; set => SetupState.PresentationFeedLogin = value; }
+        public string Password { get => SetupState.PresentationFeedPass; set => SetupState.PresentationFeedPass = value; }
+        public string DeviceAddress2 { get => SetupState.LecturerFeed; set => SetupState.LecturerFeed = value; }
 
-        public string Login { get; set; } = "admin";
-        public string Password { get; set; } = "123456";
-        public string DeviceAddress2 { get; set; } = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov";
-
-        public string Login2 { get; set; } = "admin";
-        public string Password2 { get; set; } = "123456";
+        public string Login2 { get => SetupState.LecturerFeedLogin; set => SetupState.LecturerFeedLogin = value; }
+        public string Password2 { get => SetupState.LecturerFeedPass; set => SetupState.LecturerFeedPass = value; }
 
         public IVideoSource VideoSource => _mainWindowModel.VideoSource;
         public IVideoSource VideoSource2 => _mainWindowModel.VideoSource2;
@@ -73,6 +99,11 @@ namespace SimpleRtspPlayer.GUI.ViewModels
         Task serverTask;
         public MainWindowViewModel(IMainWindowModel mainWindowModel)
         {
+            SetupStateTracker.Tracker.Track(SetupState);
+            StateHasChanged += () =>
+            {
+                SetupStateTracker.Tracker.Persist(SetupState);
+            };
             _mainWindowModel = mainWindowModel ?? throw new ArgumentNullException(nameof(mainWindowModel));
             
             StartClickCommand = new RelayCommand(OnStartButtonClick, () => _startButtonEnabled);
@@ -83,6 +114,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                 StudioServer.Program.RunServer(this);
             });
         }
+        
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
@@ -147,20 +179,18 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             _mainWindowModel.Stop();
         }
 
-        public async Task PrepareSetup(SetupState state)
+        public async Task PrepareSetup()
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                SetupState = state;
                 StateHasChanged?.Invoke();
             });
         }
 
-        public async Task Run(SetupState state)
+        public async Task Run()
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                this.SetupState = state;
                 IsActive = true;
                 if (!IsRecording)
                     Task.Run(BeginRecording);
@@ -272,18 +302,22 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                     case SessionState.StreamerLike:
                         HideAndShowVideosAndFuckOff.ShowViewViewBackground = true;
                         HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = true;
+                        HideAndShowVideosAndFuckOff.AsStreamer = true;
                         break;
                     case SessionState.SideBySide:
                         HideAndShowVideosAndFuckOff.ShowViewViewBackground = true;
                         HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = true;
+                        HideAndShowVideosAndFuckOff.AsStreamer = false;
                         break;
                     case SessionState.OnlyPresentation:
                         HideAndShowVideosAndFuckOff.ShowViewViewBackground = true;
                         HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = false;
+                        HideAndShowVideosAndFuckOff.AsStreamer = false;
                         break;
                     case SessionState.OnlyLecturer:
                         HideAndShowVideosAndFuckOff.ShowViewViewBackground = false;
                         HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = true;
+                        HideAndShowVideosAndFuckOff.AsStreamer = false;
                         break;
                 }
                 HideAndShowVideosAndFuckOff.Update?.Invoke();

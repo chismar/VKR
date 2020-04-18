@@ -35,8 +35,8 @@ namespace StudioServer
         bool IsRecording { get; }
         SessionState CurrentState { get; }
 
-        Task PrepareSetup(SetupState state);
-        Task Run(SetupState state);
+        Task PrepareSetup();
+        Task Run();
         Task Stop();
         Task BeginRecording();
         Task StopRecording();
@@ -186,15 +186,14 @@ namespace StudioServer
             return Directory.GetFiles(ppath, $"*{name}.avi");
         }
 
-        public async Task PrepareSetup(SetupState state)
+        public async Task PrepareSetup()
         {
             await InitBash();
 
         }
 
-        public async Task Run(SetupState setupState)
+        public async Task Run()
         {
-            SetupState = setupState;
             await InitBash();
         }
 
