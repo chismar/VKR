@@ -2,7 +2,6 @@
 @using StudioServer.Data
 @inject StudioControl StudioControl
 @inject IJSRuntime JSRuntime
-
 <h1>Выбор режима записи</h1>
 
 <p>@IsActiveOrNot</p>
@@ -23,6 +22,10 @@
 <textarea @bind="StudioControl.SetupState.PresentationFeed" />
 <textarea @bind="StudioControl.SetupState.PresentationFeedLogin" />
 <textarea @bind="StudioControl.SetupState.PresentationFeedPass" />
+<textarea @bind="SetupState.ChromakeyColor.r" />
+<textarea @bind="SetupState.ChromakeyColor.g" />
+<textarea @bind="SetupState.ChromakeyColor.b" />
+<textarea @bind="SetupState.UseMicInput" />
 <br />
 <p>Архив</p>
 @foreach (var file in files)

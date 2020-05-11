@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using SimpleRtspPlayer.RawFramesDecoding;
 using SimpleRtspPlayer.RawFramesDecoding.DecodedFrames;
+using StudioServer;
 using PixelFormat = SimpleRtspPlayer.RawFramesDecoding.PixelFormat;
 
 namespace SimpleRtspPlayer.GUI.Views
@@ -105,6 +106,8 @@ namespace SimpleRtspPlayer.GUI.Views
                     VideoImage.Width = ActualWidth;
                     VideoImage.Height = ActualHeight;
                 }
+                VideoImage.Effect = new Chromakey() { R = SetupState.ChromakeyColor.r / 255f, G = SetupState.ChromakeyColor.g / 255f, B = SetupState.ChromakeyColor.b / 255f, _Tolerance = 0.1f, _Threshold = 0.1f };
+
             }
             else
             {
@@ -179,7 +182,7 @@ namespace SimpleRtspPlayer.GUI.Views
 
             VideoImage.Source = _writeableBitmap;
             if (UseChromakey)
-                VideoImage.Effect = new Chromakey() { R = 81f / 255f, G = 96f / 255f, B = 41f / 255f, _Tolerance = 0f, _Threshold = 0.5f };
+                VideoImage.Effect = new Chromakey() { R = SetupState.ChromakeyColor.r / 255f, G = SetupState.ChromakeyColor.g / 255f, B = SetupState.ChromakeyColor.b / 255f, _Tolerance = 0.1f, _Threshold = 0.1f };
         }
         public class Chromakey : ShaderEffect
         {

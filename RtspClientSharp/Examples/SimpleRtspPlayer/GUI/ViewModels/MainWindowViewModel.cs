@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Management;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -27,15 +28,18 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                 .Id(w => nameof(SetupState))
                 .Properties(w => new
                 {
+                    w.FolderForVideos,
                     w.LecturerFeed,
                     w.LecturerFeedLogin,
                     w.LecturerFeedPass,
                     w.PresentationFeed,
                     w.PresentationFeedLogin,
-                    w.PresentationFeedPass
+                    w.PresentationFeedPass,
+                    SetupState.ChromakeyColor,
+                    SetupState.UseMicInput,
                 });
-    
-    }
+
+        }
     }
     public class MainWindowViewModel : INotifyPropertyChanged, IStreamerController
     {
@@ -105,7 +109,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                 SetupStateTracker.Tracker.Persist(SetupState);
             };
             _mainWindowModel = mainWindowModel ?? throw new ArgumentNullException(nameof(mainWindowModel));
-            
+
             StartClickCommand = new RelayCommand(OnStartButtonClick, () => _startButtonEnabled);
             StopClickCommand = new RelayCommand(OnStopButtonClick, () => _stopButtonEnabled);
             ClosingCommand = new RelayCommand<CancelEventArgs>(OnClosing);
@@ -114,7 +118,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                 StudioServer.Program.RunServer(this);
             });
         }
-        
+
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
@@ -145,7 +149,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
 
             RunFFMpeg();
             var cp1 = useSetupState ? GetConparam(SetupState.PresentationFeed, SetupState.PresentationFeedLogin, SetupState.PresentationFeedPass) : GetConparam(DeviceAddress, Login, Password);
-            var cp2= useSetupState ? GetConparam(SetupState.LecturerFeed, SetupState.LecturerFeedLogin, SetupState.LecturerFeedPass) : GetConparam(DeviceAddress2, Login2, Password2);
+            var cp2 = useSetupState ? GetConparam(SetupState.LecturerFeed, SetupState.LecturerFeedLogin, SetupState.LecturerFeedPass) : GetConparam(DeviceAddress2, Login2, Password2);
 
             _mainWindowModel.Start(cp1, cp2);
             _mainWindowModel.StatusChanged += MainWindowModelOnStatusChanged;
@@ -155,10 +159,36 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             _stopButtonEnabled = true;
             StopClickCommand.RaiseCanExecuteChanged();
         }
+        private static void KillProcessAndChildrens(int pid)
+        {
+            ManagementObjectSearcher processSearcher = new ManagementObjectSearcher
+              ("Select * From Win32_Process Where ParentProcessID=" + pid);
+            ManagementObjectCollection processCollection = processSearcher.Get();
 
+            // We must kill child processes first!
+            if (processCollection != null)
+            {
+                foreach (ManagementObject mo in processCollection)
+                {
+                    KillProcessAndChildrens(Convert.ToInt32(mo["ProcessID"])); //kill child processes(also kills childrens of childrens etc.)
+                }
+            }
+
+            // Then kill parents.
+            try
+            {
+                Process proc = Process.GetProcessById(pid);
+                if (!proc.HasExited) proc.Kill();
+            }
+            catch (ArgumentException)
+            {
+                // Process already exited.
+            }
+        }
         private void OnStopButtonClick()
         {
-            ffmpegRecordingProcess?.Kill();
+            if (ffmpegRecordingProcess != null)
+                KillProcessAndChildrens(ffmpegRecordingProcess.Id);
             _mainWindowModel.Stop();
             _mainWindowModel.StatusChanged -= MainWindowModelOnStatusChanged;
 
@@ -208,51 +238,63 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                 StateHasChanged?.Invoke();
             });
         }
-        Process ffmpegRecordingProcess; 
-        public string MakeUnique(string path)
+        Process ffmpegRecordingProcess;
+        public string MakeUnique(string dirPath, string name)
         {
-            string dir = Path.GetDirectoryName(path);
-            string fileName = Path.GetFileNameWithoutExtension(path);
-            string fileExt = Path.GetExtension(path);
+            string fileName = Path.GetFileNameWithoutExtension(name);
+            string fileExt = Path.GetExtension(name);
 
             for (int i = 1; ; ++i)
             {
-                if (!File.Exists(path))
-                    return path;
+                if (!File.Exists(dirPath + name))
+                    return name;
 
-                path = Path.Combine(dir, fileName + i + fileExt);
+                name = Path.Combine(fileName + i + fileExt);
             }
         }
         void RunFFMpeg()
         {
+            if (ffmpegRecordingProcess != null)
+                return;
             int exitCode;
             ProcessStartInfo processInfo;
             Process process;
             string input = File.ReadAllText("ffmpeg_record.bat");
-            processInfo = new ProcessStartInfo("ffmpeg.exe", @$"-f dshow -i video=""screen-capture-recorder"":audio=""virtual-audio-capturer"" -c:v libx264 -crf 0 -preset ultrafast {MakeUnique("output.mkv")} ");
+            var curDir = Directory.GetCurrentDirectory();
+            var dir = curDir + SetupState.FolderForVideos;
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+            processInfo = new ProcessStartInfo("ffmpeg.exe", @$"-f dshow -i video=""screen-capture-recorder"":audio=""virtual-audio-capturer"" -c:v libx264 -crf 0 -preset ultrafast {MakeUnique(dir, "output.mkv")} ");
             processInfo.CreateNoWindow = true;
-            processInfo.WorkingDirectory = Directory.GetCurrentDirectory();
+            processInfo.WorkingDirectory = dir;
             processInfo.UseShellExecute = false;
             // *** Redirect the output ***
             processInfo.RedirectStandardError = true;
             processInfo.RedirectStandardOutput = true;
-
+            ffmpegRecordingProcess = Process.Start(processInfo);
             Task.Run(() =>
             {
-                ffmpegRecordingProcess = Process.Start(processInfo);
-                ffmpegRecordingProcess.WaitForExit();
+                try
+                {
+                    ffmpegRecordingProcess.WaitForExit();
 
-                // *** Read the streams ***
-                // Warning: This approach can lead to deadlocks, see Edit #2
-                string output = ffmpegRecordingProcess.StandardOutput.ReadToEnd();
-                string error = ffmpegRecordingProcess.StandardError.ReadToEnd();
+                    // *** Read the streams ***
+                    // Warning: This approach can lead to deadlocks, see Edit #2
+                    string output = ffmpegRecordingProcess.StandardOutput.ReadToEnd();
+                    string error = ffmpegRecordingProcess.StandardError.ReadToEnd();
 
-                exitCode = ffmpegRecordingProcess.ExitCode;
+                    exitCode = ffmpegRecordingProcess.ExitCode;
 
-                Console.WriteLine("output>>" + (String.IsNullOrEmpty(output) ? "(none)" : output));
-                Console.WriteLine("error>>" + (String.IsNullOrEmpty(error) ? "(none)" : error));
-                Console.WriteLine("ExitCode: " + exitCode.ToString(), "ExecuteCommand");
-                ffmpegRecordingProcess.Close();
+                    Console.WriteLine("output>>" + (String.IsNullOrEmpty(output) ? "(none)" : output));
+                    Console.WriteLine("error>>" + (String.IsNullOrEmpty(error) ? "(none)" : error));
+                    Console.WriteLine("ExitCode: " + exitCode.ToString(), "ExecuteCommand");
+                    
+                    KillProcessAndChildrens(ffmpegRecordingProcess.Id);
+                }
+                finally
+                {
+                    ffmpegRecordingProcess = null;
+                }
             });
         }
         public async Task BeginRecording()
@@ -262,6 +304,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                 useSetupState = true;
                 OnStartButtonClick();
                 useSetupState = false;
+                IsRecording = true;
                 StateHasChanged?.Invoke();
             });
         }
@@ -270,6 +313,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                IsRecording = false;
                 OnStopButtonClick();
                 StateHasChanged?.Invoke();
             });
@@ -280,7 +324,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             var ppath = SetupState.RootFS + SetupState.FolderForVideos;
             if (!Directory.Exists(ppath))
                 return Array.Empty<string>();
-            return Directory.GetFiles(ppath, $"*{name}.avi");
+            return Directory.GetFiles(ppath, $"*{name}.mkv");
         }
 
         public async Task SetRecordingSession(string name)

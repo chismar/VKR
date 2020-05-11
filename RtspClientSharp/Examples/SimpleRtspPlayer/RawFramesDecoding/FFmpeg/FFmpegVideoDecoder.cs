@@ -112,6 +112,8 @@ namespace SimpleRtspPlayer.RawFramesDecoding.FFmpeg
 
         private void TransformTo(IntPtr buffer, int bufferStride, TransformParameters parameters)
         {
+            if (_disposed)
+                return;
             if (!_scalersMap.TryGetValue(parameters, out FFmpegDecodedVideoScaler videoScaler))
             {
                 videoScaler = FFmpegDecodedVideoScaler.Create(_currentFrameParameters, parameters);
@@ -122,6 +124,7 @@ namespace SimpleRtspPlayer.RawFramesDecoding.FFmpeg
 
             if (resultCode != 0)
                 throw new DecoderException($"An error occurred while converting decoding video frame, {_videoCodecId} codec, code: {resultCode}");
+            
         }
   
 
