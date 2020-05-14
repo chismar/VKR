@@ -17,48 +17,7 @@ namespace StudioServer.Data
             _cts = new CancellationTokenSource();
             readTask = Task.Run(async () =>
             {
-                while (!_cts.IsCancellationRequested)
-                {
-                    try
-                    {
-                        if (Console.KeyAvailable)
-                        {
-                            var kInfo = Console.ReadKey();
-                            Console.WriteLine(
-                            kInfo.KeyChar.ToString());
-                            switch (kInfo.Key)
-                            {
-                                case ConsoleKey.NumPad7:
-                                    await StreamerController.ChangeSessionState(SessionState.OnlyLecturer);
-                                    break;
-                                case ConsoleKey.NumPad8:
-                                    await StreamerController.ChangeSessionState(SessionState.SideBySide);
-                                    break;
-                                case ConsoleKey.NumPad9:
-                                    await StreamerController.ChangeSessionState(SessionState.OnlyPresentation);
-                                    break;
-                                case ConsoleKey.NumPad4:
-                                    await StreamerController.ChangeSessionState(SessionState.StreamerLike);
-                                    break;
-                                case ConsoleKey.NumPad5:
-                                    await StreamerController.Stop();
-                                    await StreamerController.Run();
-                                    await StreamerController.BeginRecording();
-                                    break;
-                                case ConsoleKey.NumPad6:
-                                    await StreamerController.StopRecording();
-                                    await StreamerController.Stop();
-                                    break;
-                            }
-                        }
-
-
-                    }
-                    finally
-                    {
-                        await Task.Delay(30);
-                    }
-                }
+               
             });
         }
         public void Dispose()

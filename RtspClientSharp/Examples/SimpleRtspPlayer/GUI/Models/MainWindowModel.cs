@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using RtspClientSharp;
 using SimpleRtspPlayer.RawFramesDecoding.DecodedFrames;
@@ -48,8 +49,8 @@ namespace SimpleRtspPlayer.GUI.Models
                 //wi.WaveFormat = new WaveFormat(16000, 1);
                 var wo = new WaveOutEvent();
                 //wo.OutputWaveFormat = new WaveFormat(44100, 1);
+                //wo.DeviceNumber = 1;
                 wo.Init(_audioStream);
-                wo.DeviceNumber = 1;
                 wo.Play();
                 WaveInEvent wi = null;
                 if (SetupState.UseMicInput)
@@ -111,7 +112,11 @@ namespace SimpleRtspPlayer.GUI.Models
             {
                 _doAudio = doAudio;
                 _realtimeAudioSource.SetRawFramesSource(_rawFramesSource);
-                _realtimeAudioSource.FrameReceived += _realtimeAudioSource_FrameReceived;
+                if (SetupState.UseMicInput)
+                    _realtimeAudioSource_FrameReceived(null, null);
+                else
+                    _realtimeAudioSource.FrameReceived += _realtimeAudioSource_FrameReceived;
+
             }
             _rawFramesSource.Start();
 
@@ -122,11 +127,19 @@ namespace SimpleRtspPlayer.GUI.Models
             if (!_soundIsStarted)
             {
                 _soundIsStarted = true;
-                _audioStream = new BufferedWaveProvider(new WaveFormat(frame.Format.SampleRate, frame.Format.BitPerSample, frame.Format.Channels));
-                _audioStream.BufferDuration = TimeSpan.FromSeconds(15);
-                if (!SetupState.UseMicInput)
+                if(SetupState.UseMicInput)
+                {
+                    _audioStream = new BufferedWaveProvider(new WaveFormat(44100, 1));
+                    _audioStream.BufferDuration = TimeSpan.FromSeconds(15);
+                    RunSound();
+                }
+                else
+                {
+                    _audioStream = new BufferedWaveProvider(new WaveFormat(frame.Format.SampleRate, frame.Format.BitPerSample, frame.Format.Channels));
+                    _audioStream.BufferDuration = TimeSpan.FromSeconds(15);
                     _audioStream.AddSamples(frame.DecodedBytes.Array, frame.DecodedBytes.Offset, frame.DecodedBytes.Count);
-                RunSound();
+                    RunSound();
+                }
             }
             else
             {

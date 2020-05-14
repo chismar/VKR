@@ -36,7 +36,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                     w.PresentationFeedLogin,
                     w.PresentationFeedPass,
                     SetupState.ChromakeyColor,
-                    SetupState.UseMicInput,
+                    //SetupState.UseMicInput,
                 });
 
         }
@@ -267,10 +267,11 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             processInfo = new ProcessStartInfo("ffmpeg.exe", @$"-f dshow -i video=""screen-capture-recorder"":audio=""virtual-audio-capturer"" -c:v libx264 -crf 0 -preset ultrafast {MakeUnique(dir, "output.mkv")} ");
             processInfo.CreateNoWindow = true;
             processInfo.WorkingDirectory = dir;
-            processInfo.UseShellExecute = false;
+            processInfo.WindowStyle = ProcessWindowStyle.Hidden;
+           // processInfo.UseShellExecute = false;
             // *** Redirect the output ***
-            processInfo.RedirectStandardError = true;
-            processInfo.RedirectStandardOutput = true;
+        //    processInfo.RedirectStandardError = true;
+        //    processInfo.RedirectStandardOutput = true;
             ffmpegRecordingProcess = Process.Start(processInfo);
             Task.Run(() =>
             {
@@ -280,14 +281,14 @@ namespace SimpleRtspPlayer.GUI.ViewModels
 
                     // *** Read the streams ***
                     // Warning: This approach can lead to deadlocks, see Edit #2
-                    string output = ffmpegRecordingProcess.StandardOutput.ReadToEnd();
-                    string error = ffmpegRecordingProcess.StandardError.ReadToEnd();
+        //            string output = ffmpegRecordingProcess.StandardOutput.ReadToEnd();
+        //            string error = ffmpegRecordingProcess.StandardError.ReadToEnd();
 
                     exitCode = ffmpegRecordingProcess.ExitCode;
 
-                    Console.WriteLine("output>>" + (String.IsNullOrEmpty(output) ? "(none)" : output));
-                    Console.WriteLine("error>>" + (String.IsNullOrEmpty(error) ? "(none)" : error));
-                    Console.WriteLine("ExitCode: " + exitCode.ToString(), "ExecuteCommand");
+                 //   Console.WriteLine("output>>" + (String.IsNullOrEmpty(output) ? "(none)" : output));
+               //     Console.WriteLine("error>>" + (String.IsNullOrEmpty(error) ? "(none)" : error));
+                //    Console.WriteLine("ExitCode: " + exitCode.ToString(), "ExecuteCommand");
                     
                     KillProcessAndChildrens(ffmpegRecordingProcess.Id);
                 }

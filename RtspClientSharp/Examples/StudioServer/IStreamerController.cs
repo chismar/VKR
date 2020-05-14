@@ -18,7 +18,8 @@ namespace StudioServer
     public class SetupState
     {
         public static (byte r, byte g, byte b) ChromakeyColor;
-        public static bool UseMicInput = false;
+        public static bool UseMicInput = true;
+        public static int DeviceNumber = -1;
         public string RootFS => Directory.GetCurrentDirectory();//@"C:\Users\Виталий\AppData\Local\Packages\CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc\LocalState\rootfs\".Replace(@"\", @"/");
         public string FolderForVideos = "/";
         public string LecturerFeedPass;
