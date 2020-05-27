@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using GalaSoft.MvvmLight.Command;
 using Jot;
+using Jot.Storage;
 using RtspClientSharp;
 using SimpleRtspPlayer.GUI.Models;
 using SimpleRtspPlayer.GUI.Views;
@@ -19,7 +20,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
     static class SetupStateTracker
     {
         // expose the tracker instance
-        public static Tracker Tracker = new Tracker();
+        public static Tracker Tracker = new Tracker(new JsonFileStore(Directory.GetCurrentDirectory()));
 
         static SetupStateTracker()
         {

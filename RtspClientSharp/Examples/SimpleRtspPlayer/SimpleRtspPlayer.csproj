@@ -5,9 +5,11 @@
 	<PropertyGroup>
 		<Platforms>AnyCPU;x64</Platforms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<OutputType>WinExe</OutputType>
+		<OutputType>Exe</OutputType>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<UseWPF>true</UseWPF>
+    <StartupObject>SimpleRtspPlayer.ConsoleProgram</StartupObject>
+    <UseWindowsForms>true</UseWindowsForms>
 	</PropertyGroup> 
   <ItemGroup>
     <ProjectReference Include="..\..\RtspClientSharp\RtspClientSharp.csproj" />
@@ -34,6 +36,7 @@
   <ItemGroup>
     <PackageReference Include="Jot" Version="2.1.4" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.2" />
+    <PackageReference Include="MouseKeyHook" Version="5.6.0" />
     <PackageReference Include="MvvmLightLibsStd10" Version="5.4.1.1" />
     <PackageReference Include="NAudio" Version="1.10.0" />
     <PackageReference Include="System.Management" Version="4.7.0" />

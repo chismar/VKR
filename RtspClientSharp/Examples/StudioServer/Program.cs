@@ -55,7 +55,7 @@ namespace StudioServer
             }
             memory.Position = 0;
             var ext = Path.GetExtension(path).ToLowerInvariant();
-            return File(memory, GetMimeTypes()[ext], fileName + ".avi"/* Path.GetFileName(path)*/);
+            return File(memory, GetMimeTypes()[ext], fileName + ".mkv"/* Path.GetFileName(path)*/);
         }
 
         private Dictionary<string, string> GetMimeTypes()
@@ -68,7 +68,8 @@ namespace StudioServer
             {".docx", "application/vnd.ms-word"},
             {".png", "image/png"},
             {".jpg", "image/jpeg"},
-            {".avi", "video/avi" }
+            {".avi", "video/avi" },
+            {".mkv", "video/mkv" }
         };
         }
     }

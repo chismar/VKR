@@ -55,16 +55,28 @@ namespace StudioServer
                 app.UseStaticFiles();
             else
             {
-                app.UseStaticFiles(new StaticFileOptions()
-                {
-                    FileProvider = new CompositeFileProvider(new[] {
-                        new PhysicalFileProvider(Path.Combine(env.ContentRootPath, "..\\..\\..\\..\\..\\StudioServer", "wwwroot")),
+                if(Directory.Exists(Path.Combine(env.ContentRootPath, "..\\..\\..\\..\\..\\StudioServer")))
+                    app.UseStaticFiles(new StaticFileOptions()
+                    {
+                        FileProvider = new CompositeFileProvider(new[] {
+                            new PhysicalFileProvider(Path.Combine(env.ContentRootPath, "..\\..\\..\\..\\..\\StudioServer", "wwwroot")),
+                            env.WebRootFileProvider
+                        }
+                        ),
+                    
+                        //RequestPath = "/wwwroot"
+                    });
+                else
+                    app.UseStaticFiles(new StaticFileOptions()
+                    {
+                        FileProvider = new CompositeFileProvider(new[] {
+                        new PhysicalFileProvider(Path.Combine(env.ContentRootPath, "wwwroot")),
                         env.WebRootFileProvider
                     }
                     ),
-                    
-                    //RequestPath = "/wwwroot"
-                });
+
+                        //RequestPath = "/wwwroot"
+                    });
             }
            
             app.UseRouting();

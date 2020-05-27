@@ -16,16 +16,6 @@
 <button class="btn btn-primary" @onclick="SideBySide">Оба</button>
 <button class="btn btn-primary" @onclick="Streamer">Как стример</button>
 <br />
-<textarea @bind="StudioControl.SetupState.LecturerFeed" />
-<textarea @bind="StudioControl.SetupState.LecturerFeedLogin" />
-<textarea @bind="StudioControl.SetupState.LecturerFeedPass" />
-<textarea @bind="StudioControl.SetupState.PresentationFeed" />
-<textarea @bind="StudioControl.SetupState.PresentationFeedLogin" />
-<textarea @bind="StudioControl.SetupState.PresentationFeedPass" />
-<textarea @bind="SetupState.ChromakeyColor.r" />
-<textarea @bind="SetupState.ChromakeyColor.g" />
-<textarea @bind="SetupState.ChromakeyColor.b" />
-<textarea @bind="SetupState.DeviceNumber" />
 <br />
 <p>Архив</p>
 @foreach (var file in files)

@@ -1,1 +1,68 @@
 ﻿@page "/counter"
+@using StudioServer.Data
+@inject StudioControl StudioControl
+@inject IJSRuntime JSRuntime
+<h1>Конфигурирование</h1>
+
+<p>@IsActiveOrNot</p>
+<p>@IsOnOff</p>
+<p>Режим: @currentRegime</p>
+<p>Сессия: @StudioControl.StreamerController.CurrentSession</p>
+<p>Результат последнего запроса: @lastResult</p>
+
+<br />
+<p>RTSP лектора</p>
+<textarea @bind="StudioControl.SetupState.LecturerFeed" />
+<p>RTSP логин лектора</p>
+<textarea @bind="StudioControl.SetupState.LecturerFeedLogin" />
+<p>RTSP пароль лектора</p>
+<textarea @bind="StudioControl.SetupState.LecturerFeedPass" />
+<p>RTSP презентации</p>
+<textarea @bind="StudioControl.SetupState.PresentationFeed" />
+<p>RTSP логин презентации</p>
+<textarea @bind="StudioControl.SetupState.PresentationFeedLogin" />
+<p>RTSP пароль презентации</p>
+<textarea @bind="StudioControl.SetupState.PresentationFeedPass" />
+<p>Хромакей R</p>
+<textarea @bind="SetupState.ChromakeyColor.r" />
+<p>Хромакей G</p>
+<textarea @bind="SetupState.ChromakeyColor.g" />
+<p>Хромакей B</p>
+<textarea @bind="SetupState.ChromakeyColor.b" />
+<p>Номер аудио-устройства</p>
+<textarea @bind="SetupState.DeviceNumber" />
+<p>Использовать ли микрофон</p>
+<button @onclick="ToggleMic"
+        class="btn @( SetupState.UseMicInput ? "btn-primary" : "btn-secondary" )">
+    <i class="fas fa-thumbs-up fa-lg"></i>
+</button>
+
+<br />
+
+@code {
+
+    void ToggleMic()
+    {
+        SetupState.UseMicInput = !SetupState.UseMicInput;
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        StudioControl.StreamerController.StateHasChanged += ControllerStateHasChanged;
+    }
+
+    void ControllerStateHasChanged()
+    {
+        InvokeAsync(() =>
+        StateHasChanged());
+    }
+
+
+    private string currentRegime => StudioControl.StreamerController.CurrentState.ToString();
+    private bool currentlyRecording => StudioControl.StreamerController.IsRecording;
+    private bool currentlyActive => StudioControl.StreamerController.IsActive;
+    private string lastResult = "";
+    private string DoOnOff => currentlyRecording ? "Выключить запись" : "Включить запись";
+    private string IsOnOff => currentlyRecording ? "Идёт запись" : "Не идёт запись";
+    private string IsActiveOrNot => currentlyActive ? "Студия запущена" : "Студия не запущена";
+
+}
