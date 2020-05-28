@@ -17,8 +17,31 @@ namespace SimpleRtspPlayer.GUI.Views
         {
             InitializeComponent(); 
             m_GlobalHook = Hook.GlobalEvents();
-
+           
             m_GlobalHook.KeyUp += M_GlobalHook_KeyUp; 
+        }
+        public override void EndInit()
+        {
+            base.EndInit();
+            var ctx = this.DataContext as MainWindowViewModel;
+            ctx.StateHasChanged += HideOrShowButtons;
+        }
+
+        private void HideOrShowButtons()
+        {
+            var ctx = this.DataContext as MainWindowViewModel;
+            if(ctx.IsRecording)
+            {
+                ControlsLabel.Visibility = System.Windows.Visibility.Hidden;
+                OpenWebInterfaceButton.Visibility = System.Windows.Visibility.Hidden;
+            }
+            else
+            {
+
+                ControlsLabel.Visibility = System.Windows.Visibility.Visible;
+                OpenWebInterfaceButton.Visibility = System.Windows.Visibility.Visible;
+            }
+
         }
 
         private void M_GlobalHook_KeyUp(object sender, System.Windows.Forms.KeyEventArgs e)

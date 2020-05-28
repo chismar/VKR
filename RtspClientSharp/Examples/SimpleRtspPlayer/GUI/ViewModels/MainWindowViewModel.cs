@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Management;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -37,7 +38,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                     w.PresentationFeedLogin,
                     w.PresentationFeedPass,
                     SetupState.ChromakeyColor,
-                    //SetupState.UseMicInput,
+                    SetupState.ChromakeyValues,
                 });
 
         }
@@ -77,6 +78,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
         public bool ShowVideoSource2 = true;
 
         public RelayCommand StartClickCommand { get; }
+        public RelayCommand OpenWebInterface { get; }
         public RelayCommand StopClickCommand { get; }
         public RelayCommand<CancelEventArgs> ClosingCommand { get; }
 
@@ -112,6 +114,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             _mainWindowModel = mainWindowModel ?? throw new ArgumentNullException(nameof(mainWindowModel));
 
             StartClickCommand = new RelayCommand(OnStartButtonClick, () => _startButtonEnabled);
+            OpenWebInterface = new RelayCommand(OpenWebInterfaceMethod, () => _startButtonEnabled);
             StopClickCommand = new RelayCommand(OnStopButtonClick, () => _stopButtonEnabled);
             ClosingCommand = new RelayCommand<CancelEventArgs>(OnClosing);
             serverTask = Task.Run(() =>
@@ -120,6 +123,15 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             });
         }
 
+        private void OpenWebInterfaceMethod()
+        {
+            var info = new ProcessStartInfo()
+            {
+                FileName = "https://localhost:5001",
+                UseShellExecute = true
+            };
+            Process.Start(info);
+        }
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
@@ -265,7 +277,9 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             var dir = curDir + SetupState.FolderForVideos;
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
-            processInfo = new ProcessStartInfo("ffmpeg.exe", @$"-f dshow -i video=""screen-capture-recorder"":audio=""virtual-audio-capturer"" -c:v libx264 -crf 0 -preset ultrafast {MakeUnique(dir, "output.mkv")} ");
+            var now = DateTime.Now;
+            var fileName = $"{now.Day}_{now.Month}_{now.Year}__{now.Hour}_{now.Minute}_{now.Second}__recording.mkv";
+            processInfo = new ProcessStartInfo("ffmpeg.exe", @$"-f dshow -i video=""screen-capture-recorder"":audio=""virtual-audio-capturer"" -c:v libx264 -crf 0 -preset ultrafast {MakeUnique(dir, fileName)} ");
             processInfo.CreateNoWindow = true;
             processInfo.WorkingDirectory = dir;
             processInfo.WindowStyle = ProcessWindowStyle.Hidden;
@@ -303,6 +317,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                this.
                 useSetupState = true;
                 OnStartButtonClick();
                 useSetupState = false;
@@ -326,7 +341,7 @@ namespace SimpleRtspPlayer.GUI.ViewModels
             var ppath = SetupState.RootFS + SetupState.FolderForVideos;
             if (!Directory.Exists(ppath))
                 return Array.Empty<string>();
-            return Directory.GetFiles(ppath, $"*{name}.mkv");
+            return Directory.GetFiles(ppath, $"*.mkv").Select(x=>Path.GetFileName(x)).ToArray();
         }
 
         public async Task SetRecordingSession(string name)
@@ -349,21 +364,25 @@ namespace SimpleRtspPlayer.GUI.ViewModels
                         HideAndShowVideosAndFuckOff.ShowViewViewBackground = true;
                         HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = true;
                         HideAndShowVideosAndFuckOff.AsStreamer = true;
+                        HideAndShowVideosAndFuckOff.OnlyLecturer = false;
                         break;
                     case SessionState.SideBySide:
                         HideAndShowVideosAndFuckOff.ShowViewViewBackground = true;
                         HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = true;
                         HideAndShowVideosAndFuckOff.AsStreamer = false;
+                        HideAndShowVideosAndFuckOff.OnlyLecturer = false;
                         break;
                     case SessionState.OnlyPresentation:
                         HideAndShowVideosAndFuckOff.ShowViewViewBackground = true;
                         HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = false;
                         HideAndShowVideosAndFuckOff.AsStreamer = false;
+                        HideAndShowVideosAndFuckOff.OnlyLecturer = false;
                         break;
                     case SessionState.OnlyLecturer:
                         HideAndShowVideosAndFuckOff.ShowViewViewBackground = false;
                         HideAndShowVideosAndFuckOff.ShowViewViewWithChromakey = true;
                         HideAndShowVideosAndFuckOff.AsStreamer = false;
+                        HideAndShowVideosAndFuckOff.OnlyLecturer = true;
                         break;
                 }
                 HideAndShowVideosAndFuckOff.Update?.Invoke();

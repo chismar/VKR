@@ -28,6 +28,8 @@ namespace SimpleRtspPlayer.GUI.Views
         public static bool ShowViewViewBackground = true;
         public static Action Update;
 
+        public static bool OnlyLecturer { get; internal set; }
+
         public static bool AsStreamer { get; internal set; }
     }
     public partial class VideoView
@@ -106,7 +108,15 @@ namespace SimpleRtspPlayer.GUI.Views
                     VideoImage.Width = ActualWidth;
                     VideoImage.Height = ActualHeight;
                 }
-                VideoImage.Effect = new Chromakey() { R = SetupState.ChromakeyColor.r / 255f, G = SetupState.ChromakeyColor.g / 255f, B = SetupState.ChromakeyColor.b / 255f, _Tolerance = 0.1f, _Threshold = 0.1f };
+                if (HideAndShowVideosAndFuckOff.OnlyLecturer)
+                    VideoImage.Effect = null;
+                else
+                    VideoImage.Effect = new Chromakey() { 
+                        R = SetupState.ChromakeyColor.r / 255f, 
+                        G = SetupState.ChromakeyColor.g / 255f, 
+                        B = SetupState.ChromakeyColor.b / 255f,
+                        _Tolerance = SetupState.ChromakeyValues.tolerance, _Threshold = SetupState.ChromakeyValues.treshold
+                    };
 
             }
             else
@@ -182,7 +192,13 @@ namespace SimpleRtspPlayer.GUI.Views
 
             VideoImage.Source = _writeableBitmap;
             if (UseChromakey)
-                VideoImage.Effect = new Chromakey() { R = SetupState.ChromakeyColor.r / 255f, G = SetupState.ChromakeyColor.g / 255f, B = SetupState.ChromakeyColor.b / 255f, _Tolerance = 0.1f, _Threshold = 0.1f };
+                VideoImage.Effect = new Chromakey() { 
+                    R = SetupState.ChromakeyColor.r / 255f, 
+                    G = SetupState.ChromakeyColor.g / 255f, 
+                    B = SetupState.ChromakeyColor.b / 255f,
+                    _Tolerance = SetupState.ChromakeyValues.tolerance,
+                    _Threshold = SetupState.ChromakeyValues.treshold
+                };
         }
         public class Chromakey : ShaderEffect
         {

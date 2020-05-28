@@ -18,6 +18,7 @@ namespace StudioServer
     public class SetupState
     {
         public static (byte r, byte g, byte b) ChromakeyColor;
+        public static (float tolerance, float treshold) ChromakeyValues = (0.1f, 0.1f);
         public static bool UseMicInput = true;
         public static int DeviceNumber = -1;
         public string RootFS => Directory.GetCurrentDirectory();//@"C:\Users\Виталий\AppData\Local\Packages\CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc\LocalState\rootfs\".Replace(@"\", @"/");

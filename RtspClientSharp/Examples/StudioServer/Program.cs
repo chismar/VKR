@@ -49,7 +49,7 @@ namespace StudioServer
                 return Accepted();
             //var path = @"C:\Users\Виталий\AppData\Local\Packages\CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc\LocalState\rootfs\home\studio\videos\studio-2020-01-27-16#003A56#003A43-0-TestSession.avi";
             var memory = new MemoryStream();
-            using (var stream = new FileStream(path, FileMode.Open))
+            using (var stream = new FileStream("videos/" + path, FileMode.Open))
             {
                 await stream.CopyToAsync(memory);
             }
